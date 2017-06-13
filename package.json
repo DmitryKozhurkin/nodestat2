@@ -1,0 +1,24 @@
+{
+  "name": "nodestat2",
+  "version": "1.0.0",
+  "description": "nodestat",
+  "main": "nodestat.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "nodejs",
+    "statistic"
+  ],
+  "author": "Dmitry Kozhurkin",
+  "license": "ISC",
+  "dependencies": {
+    "ejs": "^2.5.6",
+    "lodash": "^4.17.4",
+    "moment": "^2.18.1"
+  },
+  "devDependencies": {
+    "express": "^4.15.3",
+    "mongodb": "^2.2.28"
+  }
+}

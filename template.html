@@ -1,0 +1,532 @@
+<html>
+	<head>
+		<title>Nodestat</title>
+		<style>
+		body {
+			font-family: 'Ubuntu Mono', 'Courier New', Courier, monospace;
+			font-size: 14px;
+			line-height: 14px;
+			background-color: #eee;
+			padding-left: 240px;
+		}
+		#lefter {
+			width: 260px;
+			background: #fff;
+			position: fixed;
+			z-index: 1000;
+			left: 0px;
+			top: 0px;
+			bottom: 0px;
+			overflow-x: hidden;
+			overflow-y: auto;
+			box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+		}
+		#lefter a {
+			text-decoration: none;
+		}
+		.chart {
+			min-width: 320px;
+			height: 320px;
+			margin: 0px 50px;
+			margin-top: 20px;
+			box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+		}
+		.nav {
+			display: inline-block;
+			margin: 0px;
+			padding: 10px;
+		}
+		.nav li {
+			list-style: none;
+			margin-right: 20px;
+			margin-top: 10px;
+		}
+		.nav.inline li {
+			float: left;
+		}
+		#menu hr {
+			height: 1px;
+			background-color: #eee;
+			border: none;
+			outline: none;
+		}
+
+		#filter {
+			position: fixed;
+			top: 0;
+			left: 260px;
+			right: 0;
+			z-index: 10;
+			padding: 15px 40px 10px 40px;
+			background-color: #fafafa;
+			font-size: 14px;
+			display: none;
+			box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+			text-align: center;
+		}
+
+		.filter__control {
+			text-decoration: none;
+			padding-left: 5px;
+			padding-right: 5px;
+		}
+
+		.filter__control.active {
+			color: tomato;
+		}
+
+		.filter__control + .filter__control {
+			/*margin-left: 10px;*/
+		}
+
+		.filter__border {
+			margin-left: 10px;
+			margin-right: 10px;
+		}
+
+		#filter .nav {
+			vertical-align: middle;
+			padding: 20px 0 10px 0;
+		}
+
+		#filter .nav li {
+			margin-top: 0;
+		}
+
+		#container {
+			position: relative;
+			z-index: 9;
+			margin-top: 75px;
+		}
+
+		</style>
+	</head>
+	<body>
+
+		<!-- 1h 2h 4h 8h 12h 1d 2d 3d reset |  minute hour day reset | avg inc max per reset  -->
+
+	<div id="filter">
+		Limit:
+
+		<a href="#" class="filter__control" data-type="limit" data-value="1">1h</a>
+		<a href="#" class="filter__control" data-type="limit" data-value="2">2h</a>
+		<a href="#" class="filter__control" data-type="limit" data-value="4">4h</a>
+		<a href="#" class="filter__control" data-type="limit" data-value="8">8h</a>
+		<a href="#" class="filter__control" data-type="limit" data-value="12">12h</a>
+		<a href="#" class="filter__control" data-type="limit" data-value="24">1d</a>
+		<a href="#" class="filter__control" data-type="limit" data-value="48">2d</a>
+		<a href="#" class="filter__control" data-type="limit" data-value="72">3d</a>
+		<a href="#" class="filter__control" data-type="limit">reset</a>
+
+		<span class="filter__border">|</span>
+
+		Group by:
+
+		<a href="#" class="filter__control" data-type="group" data-value="minute">minute</a>
+		<a href="#" class="filter__control" data-type="group" data-value="hour">hour</a>
+		<a href="#" class="filter__control" data-type="group" data-value="day">day</a>
+		<a href="#" class="filter__control" data-type="group">reset</a>
+
+		<span class="filter__border">|</span>
+
+		<a href="#" class="filter__control" data-type="pick" data-value="avg">avg</a>
+		<a href="#" class="filter__control" data-type="pick" data-value="inc">inc</a>
+		<a href="#" class="filter__control" data-type="pick" data-value="max">max</a>
+		<a href="#" class="filter__control" data-type="pick" data-value="per">per</a>
+		<a href="#" class="filter__control" data-type="pick">reset</a>
+
+		<br>
+
+		<ul id="hosts" class="nav inline"></ul>
+	</div>
+
+	<div align="center">
+		<ul id="hosts" class="nav inline"></ul>
+	</div>
+	<div id="lefter">
+		<ul id="menu" class="nav"></ul>
+	</div>
+	<div id="container">
+	</div>
+
+	<script type="text/javascript">
+		var qs = {
+			parse: function(a) {
+				a = a || window.location.search.substr(1);
+				a = a.split('&');
+				if (a == '') return {};
+				var b = {};
+				for (var i = 0; i < a.length; ++i) {
+					var p=a[i].split('=', 2);
+					if (p.length == 1) b[p[0]] = '';
+					else b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, ' '));
+				}
+				return b;
+			},
+			stringify: function(params) {
+				var result = [];
+				for (var name in params) {
+					if (params.hasOwnProperty(name)) {
+						result.push(encodeURIComponent(name) + '=' + encodeURIComponent(params[name]));
+					}
+				}
+				return result.join('&');
+			}
+		};
+	</script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.8.2/lodash.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.12.0/moment.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/4.2.3/highcharts.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/4.2.3/modules/exporting.js"></script>
+	<script type="text/javascript">
+	Highcharts.setOptions({
+		global: {
+			useUTC: false
+		}
+	});
+	$(function () {
+		var $menu      = $('#menu');
+		var $hosts     = $('#hosts');
+		var $container = $('#container');
+
+		var options    = <%- JSON.stringify(options) %>;
+		var pool       = <%- JSON.stringify(pool) %>;
+		var query      = <%- JSON.stringify(query) %>;
+		var domains    = _.map(pool, 'domain');
+		var groupBy    = query.group || 'minute';
+		var domain     = query.domain;
+		if (domains.indexOf(domain) !== -1) {
+			domains = [domain];
+		}
+
+		console.log('options', options);
+		console.log('domains', domains);
+
+		// Отрисовка списка пула
+		if (_.size(domains) > 1) {
+			_.each(domains, function(domain){
+				var search = qs.stringify(_.assign({ domain: domain }, query));
+				$('<li>').html($('<a>', {
+					text : domain,
+					href : '/nodestat?' + search
+				})).appendTo($hosts);
+			})
+		} else {
+			var search = qs.stringify(_.omit(query, 'domain'));
+			$('<a>', {
+				text: 'back to all',
+				href: '/nodestat?' + search
+			}).appendTo($hosts);
+		}
+
+		// отправка пачки запросов
+		function requestData(pathname, callback){
+			var calls = _.map(domains, function(domain){
+				return $.get(pathname + (pathname.indexOf('?') === -1 ? '?' : '&') + 'domain=' + domain);
+			});
+			$.when.apply($, calls).done(function(){
+				var result;
+				if (domains.length > 1) {
+					result = _.map(arguments, function(resp){
+						return resp[0].result;
+					});
+				} else {
+					result = [arguments[0].result];
+				}
+				result = _.zipObject(domains, result);
+				callback(null, result);
+			}).fail(callback);
+		}
+		// Разбить имя на ns и name
+		function splitName(value){
+			var separator = ':';
+			var splitted  = value.split(separator);
+			return {
+				ns   : splitted.shift(),
+				name : splitted.join(separator)
+			}
+		}
+		// Конвертировать данные с сервера в формат highcharts
+		function convertToHighchartsFormat(rows){
+			var map = {};
+			var minTimestamp = rows.length ? rows[0].timestamp : 0;
+			var maxTimestamp = rows.length ? rows[rows.length - 1].timestamp : 0;
+			_.each(rows, function(row){
+				_.each(row.metrics, function(metricMap, metricType){
+					_.each(metricMap, function(value, metricName){
+						metricName = metricType + ':' + metricName;
+						map[metricName] = map[metricName]||[];
+						map[metricName].push({
+							x : row.timestamp,
+							y : value
+						});
+					});
+				});
+			});
+			map = _.mapValues(map, function(serie, metricName){
+				if (serie.length === 0) {
+					return serie;
+				}
+
+				var result           = [];
+				var i                = 0;
+				var currentTimestamp = minTimestamp;
+				var currentPoint     = null;
+
+				while (currentTimestamp <= maxTimestamp) {
+					currentPoint = serie[i];
+					if (currentPoint && currentPoint.x == currentTimestamp) {
+						result.push(currentPoint);
+						++i;
+					} else {
+						result.push({
+							x : currentTimestamp,
+							y : 0
+						});
+					}
+					currentTimestamp = moment(currentTimestamp).add(1, groupBy).valueOf();
+				}
+
+				return result;
+			});
+			return map;
+		}
+		// Конвертировать данные со всех серверов
+		function convertPool(poolHistory){
+			var result = {};
+			// TODO если данных с хоста нет, всеравно отображать его на графике
+			_.each(poolHistory, function(domainData, domain){
+				domainData = convertToHighchartsFormat(domainData);
+				_.each(domainData, function(metricArray, metricName){
+					result[metricName] = result[metricName] || {};
+					result[metricName][domain] = metricArray;
+				});
+			});
+			console.log('result', result);
+			return result;
+		}
+		// Добавление точки на график / обновление значения точки
+		function addPoint(updata){
+			var chart      = this;
+			var splitted   = splitName(chart.options.title.text);
+			var type       = splitted.ns;
+			var metricName = splitted.name;
+			_.each(updata, function(data, domain){
+				_.each(data, function(data){
+					var serie = _.find(chart.series, { name: domain });
+					if (!serie) {
+						return;
+					}
+					var point = _.find(serie.data, { x: data.timestamp });
+					var value = data.metrics[type][metricName] || 0;
+					if (point) {
+						point.update(value);
+					} else {
+						serie.addPoint({
+							x: data.timestamp,
+							y: value
+						}, true, true);
+					}
+				});
+			});
+		}
+		function eachByNamespace(map, nsCb, itemCb){
+			_.chain(map).groupBy(function(val){
+				return splitName(val).ns;
+			}).each(function(group, ns){
+				nsCb(ns, group);
+				_.each(group, function(value){
+					itemCb(value, ns);
+				});
+			}).value();
+		}
+		// Запрашиваем историю
+		requestData('/nodestat/json', function(err, result){
+			if (err) {
+				throw err;
+			}
+			init(result);
+		});
+		// Функция инициализации
+		function init(poolHistory) {
+			// Запрашивалка обновлений
+			var updates = {
+				handlers: [],
+				on: function(handler){
+					updates.handlers.push(handler);
+				},
+				emit: function(data){
+					for (var i in updates.handlers||[]) {
+						updates.handlers[i].call(updates, data);
+					}
+				},
+				start: function(){
+					setInterval(function () {
+						requestData('/nodestat/json?since=' + moment().startOf(groupBy).valueOf(), function(err, result){
+							if (err) {
+								throw err;
+							}
+							console.log('UPDATE', result);
+							updates.emit(result);
+						});
+					}, options.interval * 1000);
+				}
+			};
+
+			// запрашиваем обновления
+			// updates.start();
+
+			var colors     = ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9', '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1'];
+			var poolColors = _.mapValues(poolHistory, function(value, key){
+				return colors.shift();
+			});
+
+			var historyByMetrics = convertPool(poolHistory);
+			var metricNames = _.chain(historyByMetrics).keys().sortBy().value();
+
+			// Отрисовка графиков
+			eachByNamespace(metricNames, function(nsName){
+				$('<div>', { class: 'ns-' + nsName }).appendTo($container);
+				$('<h3>' + nsName + '</h3>').appendTo($menu);
+			}, function(metricName, nsName){
+				var metricArray = historyByMetrics[metricName];
+				var chartData = _.map(metricArray, function(array, i){
+					return {
+						name           : i,
+						data           : array,
+						type           : 'area',
+						turboThreshold : 0,
+						color          : poolColors[i]
+					};
+				});
+				$('<li>')
+					.html($('<a>', { href: '#' + metricName, text: splitName(metricName).name }))
+					.appendTo($menu);
+
+				var $nsContainer = $container.find('.ns-' + nsName);
+				$nsContainer.append($('<a>', { name: metricName }));
+
+				if ('#' + metricName === location.hash) {
+					setTimeout(function() { scrollTo(location.hash); }, 0);
+				}
+
+				$('#filter').show();
+
+				var chart = $('<div>', { class: 'chart' }).appendTo($nsContainer)
+				.highcharts({
+					title: {
+						text: metricName
+					},
+					chart: {
+						type: 'area',
+						zoomType: 'x',
+						events : {
+							load : function () {
+								var self = this;
+								updates.on(function(updata){
+									addPoint.call(self, updata);
+								})
+							}
+						}
+					},
+					xAxis: {
+						type: 'datetime'
+					},
+					yAxis: {
+						allowDecimals: false,
+						min: 0
+					},
+					tooltip: {
+						crosshairs: true,
+						shared: true,
+						formatter: function(){
+							var res = [];
+
+							$.each(this.points, function (key, value) {
+								res.push('<span style="color:' + value.point.color +'"> ● </span>' + value.series.name + ': <b>' + value.y.toLocaleString() + '</b>');
+							});
+
+							var values = _.map(this.points, 'y');
+							var total  = 0;
+
+							switch (splitName(metricName).ns) {
+								case 'avg':
+								case 'per':
+									total = _.sum(values) / values.length;
+									break;
+								case 'max':
+									total = Math.max.apply(Math, values);
+									break;
+								default:
+									total = _.sum(values);
+							}
+
+							res.push('<span> ★ </span>total: <b>' + total.toLocaleString() + '</b>');
+							res.unshift(moment(this.x).format('MM.DD / HH:mm'));
+
+							return res.join('<br/>');
+						}
+					},
+					plotOptions: {
+						turboThreshold: 0,
+						area: {
+							stacking: 'normal',
+							marker: {
+								enabled: false,
+								symbol: 'circle',
+								radius: 2,
+								states: {
+									hover: {
+										enabled: true
+									}
+								}
+							}
+						}
+					},
+					series: chartData
+				});
+			});
+		}
+
+		$('.filter__control').on('click', function(e) {
+			var type   = $(this).data('type');
+			var value  = $(this).data('value');
+			var params = qs.parse(location.url);
+			var hash   = location.hash;
+
+			e.preventDefault();
+
+			value ? params[type] = value : delete params[type];
+			location.href = '/nodestat?' + qs.stringify(params) + hash;
+			scrollTo(location.hash);
+			setFilterState();
+		});
+
+		$('#lefter').on('click', 'a', function(e) {
+			var href = $(this).attr('href');
+			e.preventDefault();
+
+			location.hash = href;
+			scrollTo(href);
+		});
+
+		setFilterState();
+
+		function scrollTo(hash) {
+			window.scrollTo(0, $('a[name="' + hash.substr(1) + '"]').offset().top - $('#filter').height() - 20);
+		}
+
+		function setFilterState() {
+			var params = qs.parse(location.url);
+
+			for (key in params) {
+				if(params.hasOwnProperty(key)) {
+					$('[data-type="' + key + '"]').filter('[data-value="' + params[key] + '"]').addClass('active');
+				}
+			}
+		}
+	});
+	</script>
+	</body>
+</html>
