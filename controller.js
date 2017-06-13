@@ -7,7 +7,7 @@ const ejs      = require('ejs');
 const moment   = require('moment');
 const nodestat = require('./nodestat');
 
-let template = ejs.compile(fs.readFileSync('./template.html').toString());
+let template = ejs.compile(fs.readFileSync(`${__dirname}/template.html`).toString());
 
 module.exports = (options) => {
 
