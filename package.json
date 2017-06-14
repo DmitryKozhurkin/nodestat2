@@ -1,6 +1,6 @@
 {
   "name": "nodestat2",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "nodestat",
   "main": "nodestat.js",
   "scripts": {
