@@ -1,5 +1,5 @@
 # nodestat2
-![график nodestat](http://i.imgur.com/WCgDdYX.png)
+![график nodestat](https://i.imgur.com/BEo3T7J.png)
 
 ```
 
