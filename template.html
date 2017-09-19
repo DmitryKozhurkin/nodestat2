@@ -224,8 +224,17 @@
 
 		// отправка пачки запросов
 		function requestData(pathname, callback){
+			var pick = splitName(location.hash).ns.slice(1);
+			var metric = splitName(location.hash).name;
+
 			var calls = _.map(domains, function(domain){
-				return $.get(pathname + (pathname.indexOf('?') === -1 ? '?' : '&') + 'domain=' + domain);
+				var url = pathname + (pathname.indexOf('?') === -1 ? '?' : '&') + 'domain=' + domain;
+
+				if (pick && metric) {
+					url += '&pick=' + pick + '&metric=' + metric;
+				}
+
+				return $.get(url);
 			});
 			$.when.apply($, calls).done(function(){
 				var result;
@@ -233,8 +242,10 @@
 					result = _.map(arguments, function(resp){
 						return resp[0].result;
 					});
-				} else {
+				} else if (arguments.length) {
 					result = [arguments[0].result];
+				} else {
+					return callback(null, {});
 				}
 				result = _.zipObject(domains, result);
 				callback(null, result);
@@ -306,6 +317,7 @@
 				});
 			});
 			console.log('result', result);
+
 			return result;
 		}
 		// Добавление точки на график / обновление значения точки
@@ -348,6 +360,7 @@
 			if (err) {
 				throw err;
 			}
+
 			init(result);
 		});
 		// Функция инициализации

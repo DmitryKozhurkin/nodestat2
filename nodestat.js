@@ -179,7 +179,7 @@ class Nodestat {
 		return key.split('\uff0e').join('.');
 	}
 
-	getHistory (domain, since, groupBy, pick, callback) {
+	getHistory (domain, since, groupBy, pick, metric, callback) {
 		let where = {
 			updated : {
 				$gt: since
@@ -192,11 +192,21 @@ class Nodestat {
 
 		// console.log('Nodestat Get', domain, since, groupBy, pick);
 
+		let field = 'metrics';
+
+		if (pick) {
+			field += `.${pick}`;
+		}
+
+		if (metric) {
+			field += `.${metric}`;
+		}
+
 		let project = {
-			_id                                    : 0,
-			minute                                 : 1,
-			updated                                : 1,
-			[pick ? `metrics.${pick}` : `metrics`] : 1
+			_id     : 0,
+			minute  : 1,
+			updated : 1,
+			[field] : 1
 		};
 
 		this.collection

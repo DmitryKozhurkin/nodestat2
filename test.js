@@ -17,3 +17,5 @@ MongoClient.connect('mongodb://localhost:27017/viboom', (err, db) => {
 });
 
 app.listen(3000);
+
+console.log('http://localhost:3000');
