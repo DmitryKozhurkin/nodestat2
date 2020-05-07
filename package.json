@@ -1,6 +1,6 @@
 {
   "name": "nodestat2",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "nodestat",
   "main": "nodestat.js",
   "scripts": {
@@ -19,6 +19,6 @@
   },
   "devDependencies": {
     "express": "^4.15.3",
-    "mongodb": "^2.2.28"
+    "mongodb": "~3.5.7"
   }
 }

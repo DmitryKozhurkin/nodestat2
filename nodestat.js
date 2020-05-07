@@ -29,11 +29,11 @@ class Nodestat {
 		}
 
 		Promise.all([
-			this.collection.ensureIndex({domain: 1, minute: 1}, {unique: true, background: true}),
-			this.collection.ensureIndex({domain: 1, updated: 1}, {background: true}),
-			this.collection.ensureIndex({minute: 1}, {background: true, expireAfterSeconds: period}),
-			this.collection.ensureIndex({domain: 1}, {background: true}),
-			this.collection.ensureIndex({updated: 1}, {background: true})
+			this.collection.createIndex({domain: 1, minute: 1}, {unique: true, background: true}),
+			this.collection.createIndex({domain: 1, updated: 1}, {background: true}),
+			this.collection.createIndex({minute: 1}, {background: true, expireAfterSeconds: period}),
+			this.collection.createIndex({domain: 1}, {background: true}),
+			this.collection.createIndex({updated: 1}, {background: true})
 		]).then(res => {
 			this.start(interval);
 		});
@@ -164,7 +164,7 @@ class Nodestat {
 			minute : moment(timestamp).startOf('minute').toDate()
 		};
 
-		this.collection.update(where, upsertData, {upsert: true}, function() {
+		this.collection.updateOne(where, upsertData, {upsert: true}, function() {
 			// console.log(arguments);
 		});
 
