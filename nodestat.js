@@ -210,7 +210,8 @@ class Nodestat {
 		};
 
 		this.collection
-		.find(where, project)
+		.find(where)
+		.project(project)
 		.sort({minute: 1})
 		.toArray((err, result) => {
 			if (err) {
